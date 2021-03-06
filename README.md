@@ -1,2 +1,2 @@
-SI++
-static unit conversion safety guarantee, see example in `example.cpp`
+## SI++
+static unit conversion safety guarantee, see example in `tests/example.cpp`
