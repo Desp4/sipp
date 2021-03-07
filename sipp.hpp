@@ -287,18 +287,18 @@ struct unit_base {
         return unt;
     }
     template<is_unit U> requires(unit_assignable<unit_base, U>)
-        friend constexpr auto operator+(const unit_base& l, const U& r) noexcept {
+    friend constexpr auto operator+(const unit_base& l, const U& r) noexcept {
         using new_base = decltype(l.value + detail::unit_underlying_t<U>{});
         using new_unit = std::conditional_t<std::is_same_v<Base, new_base>, unit_base, U>;
         return new_unit{ static_cast<new_base>(l.value) + static_cast<new_base>(r) };
     }
     template<is_unit U> requires(unit_assignable<unit_base, U>)
-        friend constexpr auto& operator+=(unit_base& l, const U& r) noexcept {
+    friend constexpr auto& operator+=(unit_base& l, const U& r) noexcept {
         l.value += static_cast<Base>(r);
         return l;
     }
     template<is_unit U> requires(unit_assignable<unit_base, U>)
-        friend constexpr auto operator-(const unit_base& l, const U& r) noexcept {
+    friend constexpr auto operator-(const unit_base& l, const U& r) noexcept {
         using new_base = decltype(l.value - detail::unit_underlying_t<U>{});
         using new_unit = std::conditional_t<std::is_same_v<Base, new_base>, unit_base, U>;
         return new_unit{ static_cast<new_base>(l.value) - static_cast<new_base>(r) };
