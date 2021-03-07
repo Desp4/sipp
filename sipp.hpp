@@ -174,11 +174,17 @@ template<int P, typename Unit> requires std::is_base_of_v<basic_unit, Unit>
     template<typename B, typename T>
     using unit_from_tuple_t = typename unit_from_tuple<B, T>::type;
 
-    // intrusive value of unit
+    // unit underlying type
+    template<typename>
+    struct unit_underlying;
+
     template<typename B, typename... Qs>
-    constexpr auto unit_base_v(const unit_base<B, Qs...>& unt) noexcept {
-        return unt.value;
-    }
+    struct unit_underlying<unit_base<B, Qs...>> {
+        using type = B;
+    };
+
+    template<typename Unit>
+    using unit_underlying_t = typename unit_underlying<Unit>::type;
 
     // unit assignable specialization
     template<typename B_0, typename B_1, typename... Qs_0, typename... Qs_1>
@@ -201,23 +207,23 @@ struct unit_base {
 
     constexpr unit_base(const unit_base&) noexcept = default;
     template<is_unit Unit> requires(unit_assignable<unit_base, Unit>)
-        constexpr unit_base(const Unit& oth) noexcept : value{ static_cast<Base>(detail::unit_base_v(oth)) } {}
+        constexpr unit_base(const Unit& oth) noexcept : value{ static_cast<Base>(oth) } {}
 
     constexpr unit_base(unit_base&&) noexcept = default;
     template<is_unit Unit> requires(unit_assignable<unit_base, Unit>)
-        constexpr unit_base(Unit&& oth) noexcept : value{ std::move(static_cast<Base>(detail::unit_base_v(oth))) } {}
+        constexpr unit_base(Unit&& oth) noexcept : value{ std::move(static_cast<Base>(oth)) } {}
 
     constexpr unit_base& operator=(const unit_base&) noexcept = default;
     template<is_unit Unit> requires(unit_assignable<unit_base, Unit>)
         constexpr unit_base& operator=(const Unit& oth) noexcept {
-        value = static_cast<Base>(detail::unit_base_v(oth));
+        value = static_cast<Base>(oth);
         return *this;
     }
 
     constexpr unit_base& operator=(unit_base&&) noexcept = default;
     template<is_unit Unit> requires(unit_assignable<unit_base, Unit>)
         constexpr unit_base& operator=(Unit&& oth) noexcept {
-        value = std::move(static_cast<Base>(detail::unit_base_v(oth)));
+        value = std::move(static_cast<Base>(oth));
         return *this;
     }
 
@@ -227,23 +233,23 @@ struct unit_base {
         return *this;
     }
 
-    explicit constexpr operator Base() const noexcept { return value; }
+    template<plain_arithmetic Num>
+    explicit constexpr operator Num() const noexcept { return static_cast<Num>(value); }
 
     template<typename Oth_B, typename... Oth_Qs>
     friend constexpr unit_base<Oth_B, Oth_Qs...> unit_cast(const unit_base& unt) noexcept;
-    friend constexpr auto detail::unit_base_v<>(const unit_base& unt) noexcept;
 
     // arithmetic operators
     template<is_unit U> requires(unit_assignable<unit_base, U>)
         friend constexpr auto operator<=>(const unit_base& l, const U& r) noexcept {
-        return l.value <=> static_cast<Base>(detail::unit_base_v(r));
+        return l.value <=> static_cast<Base>(r);
     }
     template<is_unit U>
     friend constexpr auto operator*(const unit_base& l, const U& r) noexcept {
         using namespace detail;
-        using new_base = decltype(l.value* unit_base_v(r));
+        using new_base = decltype(l.value * unit_underlying_t<U>{});
         using new_unit = unit_from_tuple_t<new_base, simplified_q<tuple_cat_s_t<unit_unfold_t<unit_base, 1>, unit_unfold_t<U, 1>>>>;
-        return new_unit{ static_cast<new_base>(l.value) * static_cast<new_base>(unit_base_v(r)) };
+        return new_unit{ static_cast<new_base>(l.value) * static_cast<new_base>(r) };
     }
     template<plain_arithmetic Num>
     friend constexpr auto operator*(Num num, const unit_base& unt) noexcept {
@@ -261,9 +267,9 @@ struct unit_base {
     template<is_unit U>
     friend constexpr auto operator/(const unit_base& l, const U& r) noexcept {
         using namespace detail;
-        using new_base = decltype(l.value / unit_base_v(r));
+        using new_base = decltype(l.value / unit_underlying_t<U>{});
         using new_unit = unit_from_tuple_t<new_base, simplified_q<tuple_cat_s_t<unit_unfold_t<unit_base, 1>, unit_unfold_t<U, -1>>>>;
-        return new_unit{ static_cast<new_base>(l.value) / static_cast<new_base>(unit_base_v(r)) };
+        return new_unit{ static_cast<new_base>(l.value) / static_cast<new_base>(r) };
     }
     template<plain_arithmetic Num>
     friend constexpr auto operator/(Num num, const unit_base& unt) noexcept {
@@ -282,24 +288,24 @@ struct unit_base {
     }
     template<is_unit U> requires(unit_assignable<unit_base, U>)
         friend constexpr auto operator+(const unit_base& l, const U& r) noexcept {
-        using new_base = decltype(l.value + detail::unit_base_v(r));
+        using new_base = decltype(l.value + detail::unit_underlying_t<U>{});
         using new_unit = std::conditional_t<std::is_same_v<Base, new_base>, unit_base, U>;
-        return new_unit{ static_cast<new_base>(l.value) + static_cast<new_base>(detail::unit_base_v(r)) };
+        return new_unit{ static_cast<new_base>(l.value) + static_cast<new_base>(r) };
     }
     template<is_unit U> requires(unit_assignable<unit_base, U>)
         friend constexpr auto& operator+=(unit_base& l, const U& r) noexcept {
-        l.value += static_cast<Base>(detail::unit_base_v(r));
+        l.value += static_cast<Base>(r);
         return l;
     }
     template<is_unit U> requires(unit_assignable<unit_base, U>)
         friend constexpr auto operator-(const unit_base& l, const U& r) noexcept {
-        using new_base = decltype(l.value - detail::unit_base_v(r));
+        using new_base = decltype(l.value - detail::unit_underlying_t<U>{});
         using new_unit = std::conditional_t<std::is_same_v<Base, new_base>, unit_base, U>;
-        return new_unit{ static_cast<new_base>(l.value) - static_cast<new_base>(detail::unit_base_v(r)) };
+        return new_unit{ static_cast<new_base>(l.value) - static_cast<new_base>(r) };
     }
     template<is_unit U> requires(unit_assignable<unit_base, U>)
         friend constexpr auto& operator-=(unit_base& l, const U& r) noexcept {
-        l.value -= static_cast<Base>(detail::unit_base_v(r));
+        l.value -= static_cast<Base>(r);
         return l;
     }
     friend constexpr auto operator+(const unit_base& unt) noexcept {
@@ -330,11 +336,6 @@ struct unit_base {
 private:
     Base value;
 };
-
-template<typename B_0, typename... Qs_0, typename B_1, typename... Qs_1>
-constexpr unit_base<B_0, Qs_0...> unit_cast(const unit_base<B_1, Qs_1...>& unt) noexcept {
-    return unit_base<B_0, Qs_0...>{ static_cast<B_0>(unt.value) };
-}
 
 }
 
