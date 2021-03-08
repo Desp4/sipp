@@ -337,6 +337,11 @@ private:
     Base value;
 };
 
+template<is_unit Unit_0, is_unit Unit_1>
+constexpr Unit_0 unit_cast(const Unit_1& unt) noexcept {
+    return Unit_0{ static_cast<detail::unit_underlying_t<Unit_0>>(unt) };
+}
+
 }
 
 #endif
