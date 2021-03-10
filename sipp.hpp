@@ -321,20 +321,20 @@ struct unit_base {
     friend constexpr auto operator-(const unit_base unt) noexcept {
         return unit_base{ -unt.value };
     }
-    friend constexpr auto& operator++(unit_base unt) noexcept {
+    friend constexpr auto& operator++(unit_base& unt) noexcept {
         ++unt.value;
         return unt;
     }
-    friend constexpr auto operator++(unit_base unt, int) noexcept {
+    friend constexpr auto operator++(unit_base& unt, int) noexcept {
         unit_base ret{ unt };
         ++unt.value;
         return ret;
     }
-    friend constexpr auto& operator--(unit_base unt) noexcept {
+    friend constexpr auto& operator--(unit_base& unt) noexcept {
         --unt.value;
         return unt;
     }
-    friend constexpr auto operator--(unit_base unt, int) noexcept {
+    friend constexpr auto operator--(unit_base& unt, int) noexcept {
         unit_base ret{ unt };
         --unt.value;
         return ret;
