@@ -42,8 +42,8 @@ using force = unit<quantity<acceleration, 1>, quantity<mass, 1>>;
 
 using velocity = decltype(distance{} / time{});
 using acceleration = decltype(velocity{} / time{});
-using momentum = decltype(velocity{} *mass{});
-using force = decltype(acceleration{} *mass{});
+using momentum = decltype(velocity{} * mass{});
+using force = decltype(acceleration{} * mass{});
 
 #endif
 

@@ -62,8 +62,13 @@ template<typename B, typename... Qs>
 struct unit_type<unit_base<B, Qs...>> : std::true_type {};
 
 // unit concatenation
-template<typename B, typename U, typename...>
+template<typename B, typename...>
 struct unit_cat {
+    using type = unit_base<B>;
+};
+
+template<typename B, typename U, typename... Us>
+struct unit_cat<B, U, Us...>{
     using type = U;
 };
 
