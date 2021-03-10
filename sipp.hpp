@@ -103,6 +103,17 @@ template<typename B, int P, typename Unit> requires std::is_base_of_v<basic_unit
         using type = unit_cat_t<B, unit_unfold_wbase_t<B, typename Qs::unit, Qs::power * P>...>;
     };
 
+    // helper to get around constraint in quantity for pow != 0
+    template<int P, typename B, typename U, typename... Qs>
+    struct quantity_resolve {
+        using type = unit_base<B, quantity<U, P>, Qs...>;
+    };
+
+    template<typename B, typename U, typename... Qs>
+    struct quantity_resolve<0, B, U, Qs...> {
+        using type = unit_base<B, Qs...>;
+    };
+
     // power permissive contains
     template<typename, typename>
     struct contains_q;
@@ -115,9 +126,7 @@ template<typename B, int P, typename Unit> requires std::is_base_of_v<basic_unit
 
     template<typename B, typename... Qs, typename U, int P_0, int P_1>
     struct contains_q<unit_base<B, quantity<U, P_0>, Qs...>, quantity<U, P_1>> : std::true_type {
-        using unit_type = std::conditional_t<((P_0 + P_1) == 0),
-            unit_base<B, Qs...>, // don't include if the powers cancel out
-            unit_base<B, quantity<U, P_0 + P_1>, Qs...>>;
+        using unit_type = typename quantity_resolve<P_0 + P_1, B, U, Qs...>::type;
     };
     // closing instance if tuple depleated, have to drag unit_type anyway sadly
     template<typename B, typename Q_T>
@@ -210,16 +219,11 @@ struct unit_base {
     }
 
     template<plain_arithmetic Num>
-    explicit constexpr operator Num() const noexcept { return static_cast<Num>(value); }
+    constexpr operator Num() const noexcept { return static_cast<Num>(value); }
 
     template<typename Oth_B, typename... Oth_Qs>
     friend constexpr unit_base<Oth_B, Oth_Qs...> unit_cast(const unit_base) noexcept;
 
-    // arithmetic operators
-    template<is_unit U> requires(unit_assignable<unit_base, U>)
-        friend constexpr auto operator<=>(const unit_base l, const U r) noexcept {
-        return l.value <=> static_cast<Base>(r);
-    }
     template<is_unit U>
     friend constexpr auto operator*(const unit_base l, const U r) noexcept {
         using namespace detail;
@@ -269,22 +273,40 @@ struct unit_base {
     template<is_unit U> requires(unit_assignable<unit_base, U>)
     friend constexpr auto operator+(const unit_base l, const U r) noexcept {
         using new_base = decltype(l.value + detail::unit_underlying_t<U>{});
-        using new_unit = std::conditional_t<std::is_same_v<Base, new_base>, unit_base, U>;
-        return new_unit{ l.value + static_cast<detail::unit_underlying_t<U>>(r) };
+        return unit_base<new_base, Qs...>{ l.value + static_cast<detail::unit_underlying_t<U>>(r) };
+    }
+    template<plain_arithmetic Num>
+    friend constexpr auto operator+(const unit_base l, Num r) noexcept {
+        using new_base = decltype(l.value + r);
+        return unit_base<new_base, Qs...>{ l.value + r };
     }
     template<is_unit U> requires(unit_assignable<unit_base, U>)
     friend constexpr auto& operator+=(unit_base& l, const U r) noexcept {
+        l.value += static_cast<detail::unit_underlying_t<U>>(r);
+        return l;
+    }
+    template<plain_arithmetic Num>
+    friend constexpr auto operator+=(unit_base& l, Num r) noexcept {
         l.value += r;
         return l;
     }
     template<is_unit U> requires(unit_assignable<unit_base, U>)
     friend constexpr auto operator-(const unit_base l, const U r) noexcept {
         using new_base = decltype(l.value - detail::unit_underlying_t<U>{});
-        using new_unit = std::conditional_t<std::is_same_v<Base, new_base>, unit_base, U>;
-        return new_unit{ l.value - static_cast<detail::unit_underlying_t<U>>(r) };
+        return unit_base<new_base, Qs...>{ l.value - static_cast<detail::unit_underlying_t<U>>(r) };
+    }
+    template<plain_arithmetic Num>
+    friend constexpr auto operator-(const unit_base l, Num r) noexcept {
+        using new_base = decltype(l.value - r);
+        return unit_base<new_base, Qs...>{ l.value - r };
     }
     template<is_unit U> requires(unit_assignable<unit_base, U>)
         friend constexpr auto& operator-=(unit_base& l, const U r) noexcept {
+        l.value -= static_cast<detail::unit_underlying_t<U>>(r);
+        return l;
+    }
+    template<plain_arithmetic Num>
+    friend constexpr auto operator-=(unit_base& l, Num r) noexcept {
         l.value -= r;
         return l;
     }
@@ -311,6 +333,31 @@ struct unit_base {
         unit_base ret{ unt };
         --unt.value;
         return ret;
+    }
+    // comparison
+    template<is_unit U> requires(unit_assignable<unit_base, U>)
+    friend constexpr bool operator==(const unit_base l, const U r) noexcept {
+        return l.value == static_cast<detail::unit_underlying_t<U>>(r);
+    }
+    template<is_unit U> requires(unit_assignable<unit_base, U>)
+    friend constexpr bool operator!=(const unit_base l, const U r) noexcept {
+        return l.value != static_cast<detail::unit_underlying_t<U>>(r);
+    }
+    template<is_unit U> requires(unit_assignable<unit_base, U>)
+    friend constexpr bool operator<=(const unit_base l, const U r) noexcept {
+        return l.value <= static_cast<detail::unit_underlying_t<U>>(r);
+    }
+    template<is_unit U> requires(unit_assignable<unit_base, U>)
+    friend constexpr bool operator>=(const unit_base l, const U r) noexcept {
+        return l.value >= static_cast<detail::unit_underlying_t<U>>(r);
+    }
+    template<is_unit U> requires(unit_assignable<unit_base, U>)
+    friend constexpr bool operator<(const unit_base l, const U r) noexcept {
+        return l.value < static_cast<detail::unit_underlying_t<U>>(r);
+    }
+    template<is_unit U> requires(unit_assignable<unit_base, U>)
+    friend constexpr bool operator>(const unit_base l, const U r) noexcept {
+        return l.value > static_cast<detail::unit_underlying_t<U>>(r);
     }
 
 private:
