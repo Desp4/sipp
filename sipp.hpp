@@ -11,6 +11,7 @@
 #endif
 
 #include <type_traits>
+#include <compare>
 
 namespace sipp {
 
@@ -285,6 +286,11 @@ struct unit_base {
         using new_base = decltype(l.value + r);
         return unit_base<new_base, Qs...>{ l.value + r };
     }
+    template<plain_arithmetic Num>
+    friend constexpr auto operator+(Num l, const unit_base r) noexcept {
+        using new_base = decltype(l + r.value);
+        return unit_base<new_base, Qs...>{ l + r.value };
+    }
     template<is_unit U> requires(unit_assignable<unit_base, U>)
     friend constexpr auto& operator+=(unit_base& l, const U r) noexcept {
         l.value += static_cast<detail::unit_underlying_t<U>>(r);
@@ -304,6 +310,11 @@ struct unit_base {
     friend constexpr auto operator-(const unit_base l, Num r) noexcept {
         using new_base = decltype(l.value - r);
         return unit_base<new_base, Qs...>{ l.value - r };
+    }
+    template<plain_arithmetic Num>
+    friend constexpr auto operator-(Num l, const unit_base r) noexcept {
+        using new_base = decltype(l - r.value);
+        return unit_base<new_base, Qs...>{ l - r.value };
     }
     template<is_unit U> requires(unit_assignable<unit_base, U>)
         friend constexpr auto& operator-=(unit_base& l, const U r) noexcept {
@@ -341,28 +352,28 @@ struct unit_base {
     }
     // comparison
     template<is_unit U> requires(unit_assignable<unit_base, U>)
+    friend constexpr bool operator<=>(const unit_base l, const U r) noexcept {
+        return l.value <=> static_cast<detail::unit_underlying_t<U>>(r);
+    }
+    template<is_unit U> requires(unit_assignable<unit_base, U>)
     friend constexpr bool operator==(const unit_base l, const U r) noexcept {
         return l.value == static_cast<detail::unit_underlying_t<U>>(r);
     }
-    template<is_unit U> requires(unit_assignable<unit_base, U>)
-    friend constexpr bool operator!=(const unit_base l, const U r) noexcept {
-        return l.value != static_cast<detail::unit_underlying_t<U>>(r);
+    template<plain_arithmetic Num>
+    friend constexpr bool operator<=>(const unit_base l, Num r) noexcept {
+        return l.value <=> r;
     }
-    template<is_unit U> requires(unit_assignable<unit_base, U>)
-    friend constexpr bool operator<=(const unit_base l, const U r) noexcept {
-        return l.value <= static_cast<detail::unit_underlying_t<U>>(r);
+    template<plain_arithmetic Num>
+    friend constexpr bool operator==(const unit_base l, Num r) noexcept {
+        return l.value == r;
     }
-    template<is_unit U> requires(unit_assignable<unit_base, U>)
-    friend constexpr bool operator>=(const unit_base l, const U r) noexcept {
-        return l.value >= static_cast<detail::unit_underlying_t<U>>(r);
+    template<plain_arithmetic Num>
+    friend constexpr bool operator<=>(Num l, const unit_base r) noexcept {
+        return l <=> r.value;
     }
-    template<is_unit U> requires(unit_assignable<unit_base, U>)
-    friend constexpr bool operator<(const unit_base l, const U r) noexcept {
-        return l.value < static_cast<detail::unit_underlying_t<U>>(r);
-    }
-    template<is_unit U> requires(unit_assignable<unit_base, U>)
-    friend constexpr bool operator>(const unit_base l, const U r) noexcept {
-        return l.value > static_cast<detail::unit_underlying_t<U>>(r);
+    template<plain_arithmetic Num>
+    friend constexpr bool operator==(Num l, const unit_base r) noexcept {
+        return l == r.value;
     }
 
 private:
