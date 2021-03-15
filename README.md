@@ -30,5 +30,5 @@ Units can be nested inside other units and are not limited only to the basic typ
 ### 4. Operators
 `unit_base` has all the expected operators for an arithmetic type(including implicit casts to arithmetic types). Multiplication and division can be performed on units of any type and on any arithmetic types. The rest of binary operators, including comparison, can only be performed on units of equivalent tupes or arithmetic types.
 ### 5. Utility
-`unit_cast`   - casts any unit U<sub>1</sub> to unit U<sub>2</sub>. Same usage pattern as `static_cast`.
+`unit_cast`   - casts any unit U<sub>1</sub> to unit U<sub>2</sub>. Same usage pattern as `static_cast`.  
 `unit_to_pow` - raises unit U to an integer power P. Note that this only produces a type and does not raise the value of the unit to that power.
