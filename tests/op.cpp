@@ -23,4 +23,5 @@ int main() {
     d0 = -(v0 * t0);
     bool res0 = d0 > (a0 * t0 * t0);
     bool res1 = t0 == (v0 / a0);
+    a0 = d0 * sipp::unit_to_pow<time, -2>{};
 }

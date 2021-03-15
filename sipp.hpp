@@ -26,7 +26,9 @@ template<typename, typename>
 struct is_unit_assignable : std::false_type {};
 
 }
-
+// Arithmetic concept
+template<typename T>
+concept arithmetic = std::is_arithmetic_v<T>;
 // Base unit type concept
 template<typename T>
 concept plain_arithmetic = std::is_arithmetic_v<T> && std::is_same_v<T, std::decay_t<T>>;
@@ -206,7 +208,7 @@ struct unit_base {
     constexpr unit_base& operator=(const unit_base&) noexcept = default;
     constexpr unit_base& operator=(unit_base&&) noexcept = default;
 
-    template<plain_arithmetic Num>
+    template<arithmetic Num>
     constexpr unit_base(Num num) noexcept : value{ static_cast<Base>(num) } {}
 
     template<is_unit Unit> requires(unit_assignable<unit_base, Unit>)
@@ -218,13 +220,13 @@ struct unit_base {
         return *this;
     }
 
-    template<plain_arithmetic Num>
+    template<arithmetic Num>
     constexpr unit_base& operator=(Num num) noexcept {
         value = static_cast<Base>(num);
         return *this;
     }
 
-    template<plain_arithmetic Num>
+    template<arithmetic Num>
     constexpr operator Num() const noexcept { return static_cast<Num>(value); }
 
     template<typename Oth_B, typename... Oth_Qs>
@@ -237,17 +239,17 @@ struct unit_base {
         using new_unit = simplified_q<unit_cat_t<new_base, unit_unfold_t<unit_base, 1>, unit_unfold_t<U, 1>>>;
         return new_unit{ l.value * static_cast<unit_underlying_t<U>>(r) };
     }
-    template<plain_arithmetic Num>
+    template<arithmetic Num>
     friend constexpr auto operator*(Num num, const unit_base unt) noexcept {
         using new_base = decltype(num * unt.value);
         return unit_base<new_base, Qs...>{ num * unt.value };
     }
-    template<plain_arithmetic Num>
+    template<arithmetic Num>
     friend constexpr auto operator*(const unit_base unt, Num num) noexcept {
         using new_base = decltype(unt.value * num);
         return unit_base<new_base, Qs...>{ num * unt.value };
     }
-    template<plain_arithmetic Num>
+    template<arithmetic Num>
     friend constexpr auto& operator*=(unit_base& unt, Num num) noexcept {
         unt.value *= num;
         return unt;
@@ -259,19 +261,19 @@ struct unit_base {
         using new_unit = simplified_q<unit_cat_t<new_base, unit_unfold_t<unit_base, 1>, unit_unfold_t<U, -1>>>;
         return new_unit{ l.value / static_cast<unit_underlying_t<U>>(r) };
     }
-    template<plain_arithmetic Num>
+    template<arithmetic Num>
     friend constexpr auto operator/(Num num, const unit_base unt) noexcept {
         using namespace detail;
         using new_base = decltype(num / unt.value);
         using new_unit = simplified_q<unit_unfold_wbase_t<new_base, unit_base, -1>>;
         return new_unit{ num / unt.value };
     }
-    template<plain_arithmetic Num>
+    template<arithmetic Num>
     friend constexpr auto operator/(const unit_base unt, Num num) noexcept {
         using new_base = decltype(unt.value / num);
         return unit_base{ unt.value / num };
     }
-    template<plain_arithmetic Num>
+    template<arithmetic Num>
     friend constexpr auto& operator/=(unit_base& unt, Num num) noexcept {
         unt.value /= num;
         return unt;
@@ -281,12 +283,12 @@ struct unit_base {
         using new_base = decltype(l.value + detail::unit_underlying_t<U>{});
         return unit_base<new_base, Qs...>{ l.value + static_cast<detail::unit_underlying_t<U>>(r) };
     }
-    template<plain_arithmetic Num>
+    template<arithmetic Num>
     friend constexpr auto operator+(const unit_base l, Num r) noexcept {
         using new_base = decltype(l.value + r);
         return unit_base<new_base, Qs...>{ l.value + r };
     }
-    template<plain_arithmetic Num>
+    template<arithmetic Num>
     friend constexpr auto operator+(Num l, const unit_base r) noexcept {
         using new_base = decltype(l + r.value);
         return unit_base<new_base, Qs...>{ l + r.value };
@@ -296,7 +298,7 @@ struct unit_base {
         l.value += static_cast<detail::unit_underlying_t<U>>(r);
         return l;
     }
-    template<plain_arithmetic Num>
+    template<arithmetic Num>
     friend constexpr auto operator+=(unit_base& l, Num r) noexcept {
         l.value += r;
         return l;
@@ -306,12 +308,12 @@ struct unit_base {
         using new_base = decltype(l.value - detail::unit_underlying_t<U>{});
         return unit_base<new_base, Qs...>{ l.value - static_cast<detail::unit_underlying_t<U>>(r) };
     }
-    template<plain_arithmetic Num>
+    template<arithmetic Num>
     friend constexpr auto operator-(const unit_base l, Num r) noexcept {
         using new_base = decltype(l.value - r);
         return unit_base<new_base, Qs...>{ l.value - r };
     }
-    template<plain_arithmetic Num>
+    template<arithmetic Num>
     friend constexpr auto operator-(Num l, const unit_base r) noexcept {
         using new_base = decltype(l - r.value);
         return unit_base<new_base, Qs...>{ l - r.value };
@@ -321,7 +323,7 @@ struct unit_base {
         l.value -= static_cast<detail::unit_underlying_t<U>>(r);
         return l;
     }
-    template<plain_arithmetic Num>
+    template<arithmetic Num>
     friend constexpr auto operator-=(unit_base& l, Num r) noexcept {
         l.value -= r;
         return l;
@@ -352,26 +354,26 @@ struct unit_base {
     }
     // comparison
     template<is_unit U> requires(unit_assignable<unit_base, U>)
-    friend constexpr bool operator<=>(const unit_base l, const U r) noexcept {
+    friend constexpr auto operator<=>(const unit_base l, const U r) noexcept {
         return l.value <=> static_cast<detail::unit_underlying_t<U>>(r);
     }
     template<is_unit U> requires(unit_assignable<unit_base, U>)
     friend constexpr bool operator==(const unit_base l, const U r) noexcept {
         return l.value == static_cast<detail::unit_underlying_t<U>>(r);
     }
-    template<plain_arithmetic Num>
-    friend constexpr bool operator<=>(const unit_base l, Num r) noexcept {
+    template<arithmetic Num>
+    friend constexpr auto operator<=>(const unit_base l, Num r) noexcept {
         return l.value <=> r;
     }
-    template<plain_arithmetic Num>
+    template<arithmetic Num>
     friend constexpr bool operator==(const unit_base l, Num r) noexcept {
         return l.value == r;
     }
-    template<plain_arithmetic Num>
-    friend constexpr bool operator<=>(Num l, const unit_base r) noexcept {
+    template<arithmetic Num>
+    friend constexpr auto operator<=>(Num l, const unit_base r) noexcept {
         return l <=> r.value;
     }
-    template<plain_arithmetic Num>
+    template<arithmetic Num>
     friend constexpr bool operator==(Num l, const unit_base r) noexcept {
         return l == r.value;
     }
@@ -384,6 +386,9 @@ template<is_unit Unit_0, is_unit Unit_1>
 constexpr Unit_0 unit_cast(const Unit_1 unt) noexcept {
     return Unit_0{ static_cast<detail::unit_underlying_t<Unit_0>>(unt) };
 }
+// Raise unit to power P, value unchanged
+template<is_unit U, int P>
+using unit_to_pow = detail::simplified_q<detail::unit_unfold_t<U, P>>;
 
 }
 
